@@ -6,7 +6,11 @@ var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e) {
+    throw mod = 0, e;
+  }
 };
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
@@ -23161,6 +23165,12 @@ exec ${q(hookBin)} send --socket ${q(socket)}
   child2.unref();
   fs4.closeSync(logFD);
   if (!child2.pid) throw new Error("failed to start niks3-hook serve: no pid");
+  const deadline = Date.now() + 1e4;
+  while (!fs4.existsSync(socket)) {
+    if (!alive(child2.pid)) throw new Error("niks3-hook serve exited before binding socket");
+    if (Date.now() > deadline) throw new Error(`niks3-hook serve did not bind ${socket} within 10s`);
+    sleepSync(50);
+  }
   info(`niks3-hook serve started (pid ${child2.pid}, socket ${socket})`);
   saveState("daemonPid", String(child2.pid));
   saveState("daemonLog", logPath);
